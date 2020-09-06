@@ -21,7 +21,9 @@
             // formURL   : 'form-template.html',
             recid    : 4,
             header   : 'Edit header',
-            style1     : 'border: 1px solid red;',
+            style1   : 'border: 1px solid red;',
+            // pageStyle: 'height: 200px',
+            page: 2,
             tabs: [
                 { id: 'tab1', text: 'General' },
                 { id: 'tab2', text: 'Inputs' },
@@ -40,7 +42,6 @@
                     { type: 'spacer' },
                     { type: 'button', id: 'save', text: 'Save', img: 'icon-folder' }
                 ]
-
             },
             record: {
                 field: {
@@ -63,26 +64,42 @@
                     "percent" : '50',
                     "alpha"   : '60',
                     "select"  : 'second',
-                    "check"   : 33
-                    // "radio"   : '1'
+                    "check"   : 33,
+                    "check3"  : [-1,0,2],
+                    "radio"   : '1'
                 }
             },
             focus: 1,
             fields: [
                 // first page
-                { field: 'field.toggle', type: 'toggle', required: true, html: { group: 'General' } },
+                { field: 'field.html', type: 'html', required: true,
+                    html: {
+                        html: 'dfdf',
+                        attr: 'style="padding: 5px"',
+                        group: 'General',
+                        groupCollapsable: true
+                    }
+                },
                 { field: 'field.text', type: 'text', required: true, html: { attr: 'style="width: 300px"' }, hidden: true },
                 { field: 'field.textarea', type: 'textarea', required: true, html: { attr: 'style="width: 300px"' } },
                 { field: 'field.date', type: 'date', required: false, html: { attr: 'style="width: 90px"' } },
                 { field: 'field.time', type: 'time', required: false, html: { attr: 'style="width: 90px"' } },
                 { field: 'field.color', type: 'color', required: true, html: { attr: 'style="width: 90px"' } },
-                { field: 'field.list', type: 'list', required: true, html: { group: 'Dropdowns' },
+                { field: 'field.list', type: 'list', required: true, html: { group: 'Dropdowns', groupCollapsable: true },
                     options: {
                         match: 'contains',
                         compare: function (item) {
                             if (item.id < 4) return false;
                         },
-                        items: [
+                        items: function(el) {
+                            console.log('LIST', el)
+                            console.log(this)
+                            return [
+                                { id: 'item1', icon: 'fa fa-link', text: 'item ' + Math.round(Math.random()*100) },
+                                { id: 'item2', icon: 'fa fa-star', text: 'item ' + Math.round(Math.random()*100) }
+                            ]
+                        },
+                        items1: [
                             { id: 0, text: 'Pickle, Susan' },
                             { id: 1, text: 'Adams, John' },
                             { id: 2, text: 'Openhimer, Peter' },
@@ -98,13 +115,32 @@
                 },
                 { field: 'field.combo', type: 'combo', required: false,
                     options: {
-                        applyFilter: true,
-                        url : 'listdat.json'
+                        applyFilter: false,
+                        items: function(el) {
+                            console.log('COMBO', el)
+                            console.log(this)
+                            return [
+                                { id: 'item1', icon: 'fa fa-link', text: 'item ' + Math.round(Math.random()*100) },
+                                { id: 'item2', icon: 'fa fa-star', text: 'item ' + Math.round(Math.random()*100) }
+                            ]
+                        },
+                        // url : 'listdat.json'
                     }
                 },
                 { field: 'field.enum', type: 'enum', required: false,
                     html: { attr: 'style="width: 400px"' },
-                    options: { items: [{id: 1, text: 'Adams, John'}, 'Johnson, Peter', 'Lewis, Frank', 'Cruz, Steve', 'Donnun, Nick'] } },
+                    options: {
+                        items: function (el) {
+                            console.log('ENUM', el)
+                            console.log(this)
+                            return [
+                                { id: 'item1', icon: 'fa fa-link', text: 'item ' + Math.round(Math.random()*100) },
+                                { id: 'item2', icon: 'fa fa-star', text: 'item ' + Math.round(Math.random()*100) }
+                            ]
+                        },
+                        items1: [{id: 1, text: 'Adams, John'}, 'Johnson, Peter', 'Lewis, Frank', 'Cruz, Steve', 'Donnun, Nick']
+                    }
+                },
                 { field: 'field.file', type: 'file', required: false, html: { attr: 'style="width: 400px"' } },
                 // second page
                 { field: 'field.email', type: 'email', required: true, html: { page: 1 } },
@@ -117,7 +153,25 @@
                 { field: 'field.alpha', type: 'alphanumeric', required: false, html: { page: 1 } },
                 // third page
                 { field: 'field.select', type: 'select', required: false, options: { items: ['fist', 'second'] }, html: { page: 2 } },
-                { field: 'field.check', type: 'checkbox', required: false, html: { page: 2 } },
+                { field: 'field.toggle', type: 'toggle', required: false, html: { page: 2 } },
+                { field: 'field.check', type: 'checkbox', required: false, html: { page: 2, text: 'Options' } },
+                { field: 'field.check2', type: 'checkbox', required: false, html: { page: 2, label: 'Some long text for checkbox' } },
+                { field: 'field.check3', type: 'checks', required: false,
+                    html: {
+                        page: 2,
+                        label: 'List of Checks'
+                    },
+                    options: {
+                        items: [
+                            { id: -2, text: 'Pickle, Susan' },
+                            { id: -1, text: 'Adams, John' },
+                            { id: 0, text: 'Openhimer, Peter' },
+                            { id: 1, text: 'Woznyak, Steve' },
+                            { id: 2, text: 'Rusevelt, Franklin' },
+                            { id: '', text: 'Other, Franklin' }
+                        ]
+                    }
+                },
                 { field: 'field.radio', type: 'radio', required: false, html: { page: 2 }, options: {
                         items: [
                             { id: 0, text: 'Pickle, Susan' },
@@ -135,11 +189,11 @@
                 }
             ],
             onChange: function (event) {
-                console.log('change', event);
+                console.log(event.target, '=', event.value_previous, '-->', event.value_new);
             },
-            onInput: function (event) {
-                console.log('input', event);
-            },
+            // onInput: function (event) {
+            //     console.log('input', event);
+            // },
             postData1: {
                 a1: 1,
                 a2: 2
@@ -187,6 +241,6 @@
     </div>
 
     <!-- <div id="form" style="width: 700px; height: 600px;"></div> -->
-    <div id="form" style="width: 700px; height: 700px;">    </div>
+    <div id="form" style="width: 700px; height: 500px;">    </div>
 </body>
 </html>

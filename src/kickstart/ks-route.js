@@ -4,7 +4,6 @@ kickStart.register('route', function () {
     var app     = kickStart;
     var routes  = {};
     var routeRE = {};
-    var silent;
 
     addListener();
 
@@ -15,6 +14,7 @@ kickStart.register('route', function () {
         go      : go,
         set     : set,
         get     : get,
+        info    : info,
         process : process,
         list    : list,
         onAdd   : null,
@@ -75,21 +75,47 @@ kickStart.register('route', function () {
 
     function go(route) {
         route = String('/'+route).replace(/\/{2,}/g, '/');
-        setTimeout(function () { window.location.hash = route; }, 1);
+        window.history.replaceState({}, document.title, '#' + route)
+        process()
         return app.route;
     }
 
     function set(route) {
-        silent = true;
-        // do not use go(route) here
         route = String('/'+route).replace(/\/{2,}/g, '/');
-        window.location.hash = route;
-        setTimeout(function () { silent = false }, 1);
+        window.history.replaceState({}, document.title, '#' + route)
         return app.route;
     }
 
     function get() {
         return window.location.hash.substr(1).replace(/\/{2,}/g, '/');
+    }
+
+    function info() {
+        var matches = [];
+        var isFound = false;
+        var isExact = false;
+        // match routes
+        var hash = window.location.hash.substr(1).replace(/\/{2,}/g, '/');
+        if (hash == '') hash = '/';
+
+        for (var r in routeRE) {
+            var params = {};
+            var tmp = routeRE[r].path.exec(hash);
+            if (tmp != null) { // match
+                isFound = true;
+                if (!isExact && r.indexOf('*') === -1) {
+                    isExact = true;
+                }
+                var i = 1;
+                for (var p in routeRE[r].keys) {
+                    params[routeRE[r].keys[p].name] = tmp[i];
+                    i++;
+                }
+                // default handler
+                matches.push({ name: r, path: hash, params: params });
+            }
+        }
+        return matches;
     }
 
     function list() {
@@ -105,7 +131,6 @@ kickStart.register('route', function () {
     }
 
     function process() {
-        if (silent === true) return;
         prepare();
         // match routes
         var hash = window.location.hash.substr(1).replace(/\/{2,}/g, '/');
@@ -133,9 +158,12 @@ kickStart.register('route', function () {
                     if (eventData.isCancelled === true) return false;
                 }
                 // default handler
-                routes[r]({ name: r, path: hash, params: params }, params);
+                var res = routes[r]({ name: r, path: hash, params: params }, params);
                 // if events are available
                 if (typeof app.route.trigger == 'function') app.route.trigger($.extend(eventData, { phase: 'after' }));
+                // if hash changed (for example in handler), then do not process rest of old processings
+                var current = window.location.hash.substr(1).replace(/\/{2,}/g, '/');
+                if (hash !== current) return
             }
         }
         // find if a route matches a module route

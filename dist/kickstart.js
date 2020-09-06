@@ -135,31 +135,8 @@ var kickStart = (function () {
                             app._conf.modules[name].files  = files;
                             app._conf.modules[name].ready  = true;
                             // execute start file
-                            try {
-                                eval(start);
-                            } catch (e) {
-                                failed = true;
-                                // find error line
-                                var err = e.stack.split('\n');
-                                var tmp = err[1].match(/<anonymous>:([\d]){1,10}:([\d]{1,10})/gi);
-                                if (tmp) tmp = tmp[0].split(':');
-                                if (tmp) {
-                                    // display error
-                                    if (app._conf.verbose) {
-                                        console.error('ERROR: ' + err[0] + ' ==> ' + app._conf.modules[name].start + ', line: '+ tmp[1] + ', character: '+ tmp[2]);
-                                        console.log(e.stack);
-                                    }
-                                } else {
-                                    if (app._conf.verbose) {
-                                        console.error('ERROR: ' + app._conf.modules[name].start);
-                                        console.log(e.stack);
-                                    }
-                                }
-                                // if (typeof app.conf.fail == 'function') app.conf.fail(app._conf.modules[name]);
-                                if (typeof promise._fail == 'function') promise._fail(app._conf.modules[name]);
-                            }
+                            eval(start); // if in try block, it would not show errors properly
                             // check ready
-                            // if (typeof app.conf.ready == 'function') app.conf.ready(app._conf.modules[name]);
                             if (typeof promise._ready == 'function') promise._ready(app._conf.modules[name]);
                             modCount--;
                             isFinished();
@@ -243,7 +220,6 @@ kickStart.register('route', function () {
     var app     = kickStart;
     var routes  = {};
     var routeRE = {};
-    var silent;
 
     addListener();
 
@@ -254,6 +230,7 @@ kickStart.register('route', function () {
         go      : go,
         set     : set,
         get     : get,
+        info    : info,
         process : process,
         list    : list,
         onAdd   : null,
@@ -314,21 +291,47 @@ kickStart.register('route', function () {
 
     function go(route) {
         route = String('/'+route).replace(/\/{2,}/g, '/');
-        setTimeout(function () { window.location.hash = route; }, 1);
+        window.history.replaceState({}, document.title, '#' + route)
+        process()
         return app.route;
     }
 
     function set(route) {
-        silent = true;
-        // do not use go(route) here
         route = String('/'+route).replace(/\/{2,}/g, '/');
-        window.location.hash = route;
-        setTimeout(function () { silent = false }, 1);
+        window.history.replaceState({}, document.title, '#' + route)
         return app.route;
     }
 
     function get() {
         return window.location.hash.substr(1).replace(/\/{2,}/g, '/');
+    }
+
+    function info() {
+        var matches = [];
+        var isFound = false;
+        var isExact = false;
+        // match routes
+        var hash = window.location.hash.substr(1).replace(/\/{2,}/g, '/');
+        if (hash == '') hash = '/';
+
+        for (var r in routeRE) {
+            var params = {};
+            var tmp = routeRE[r].path.exec(hash);
+            if (tmp != null) { // match
+                isFound = true;
+                if (!isExact && r.indexOf('*') === -1) {
+                    isExact = true;
+                }
+                var i = 1;
+                for (var p in routeRE[r].keys) {
+                    params[routeRE[r].keys[p].name] = tmp[i];
+                    i++;
+                }
+                // default handler
+                matches.push({ name: r, path: hash, params: params });
+            }
+        }
+        return matches;
     }
 
     function list() {
@@ -344,7 +347,6 @@ kickStart.register('route', function () {
     }
 
     function process() {
-        if (silent === true) return;
         prepare();
         // match routes
         var hash = window.location.hash.substr(1).replace(/\/{2,}/g, '/');
@@ -372,9 +374,12 @@ kickStart.register('route', function () {
                     if (eventData.isCancelled === true) return false;
                 }
                 // default handler
-                routes[r]({ name: r, path: hash, params: params }, params);
+                var res = routes[r]({ name: r, path: hash, params: params }, params);
                 // if events are available
                 if (typeof app.route.trigger == 'function') app.route.trigger($.extend(eventData, { phase: 'after' }));
+                // if hash changed (for example in handler), then do not process rest of old processings
+                var current = window.location.hash.substr(1).replace(/\/{2,}/g, '/');
+                if (hash !== current) return
             }
         }
         // find if a route matches a module route
